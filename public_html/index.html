@@ -17,14 +17,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.2.6/gsap.min.js"></script>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-90KG4QWM9W"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-90KG4QWM9W"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
 
-  gtag('config', 'G-90KG4QWM9W');
-</script>
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'G-90KG4QWM9W');
+    </script>
+
+    <script src="https://www.google.com/recaptcha/api.js?render=reCAPTCHA_6Lffjp0hAAAAAIi2tPXpmwm5qBPknQXl83G4-MMh"></script>
+    <script>
+        function onSubmit(token) {
+            document.getElementById("forms/contact001.php").submit();
+        }
+    </script>
+
+    <script>
+        function onClick(e) {
+            e.preventDefault();
+            grecaptcha.ready(function() {
+                grecaptcha.execute('reCAPTCHA_6Lffjp0hAAAAAIi2tPXpmwm5qBPknQXl83G4-MMh', {
+                    action: 'submit'
+                }).then(function(token) {
+                    // Add your logic to submit to your backend server here.
+                });
+            });
+        }
+    </script>
 
 </head>
 
@@ -126,10 +149,13 @@
                     <div class="about-first-paragraph wow">
                         <!--about description-->
                         <span class="about-first-line">
-                    Sou
-                    <span class="color">desenvolvedor WEB</span> criativo baseado no Rio de Janeiro , Brasil </span>
+                            Sou
+                            <span class="color">desenvolvedor WEB</span> criativo baseado no Rio de Janeiro , Brasil
+                        </span>
                         <br>
-                        <span class="about-second-line"> Com minha experiência como desenvolvedor Web profissional, adquiri as habilidades e conhecimentos necessários para tornar seu projeto um sucesso. Promovendo a satisfação e a realização dos nossos clientes.</span>
+                        <span class="about-second-line"> Com minha experiência como desenvolvedor Web profissional,
+                            adquiri as habilidades e conhecimentos necessários para tornar seu projeto um sucesso.
+                            Promovendo a satisfação e a realização dos nossos clientes.</span>
                         <div class="cv">
                             <a href="#"><button>Projetos <span class="colors">CV</span></button></a>
                         </div>
@@ -271,8 +297,10 @@
                     </div>
                     <div class="portfolio-text">
                         <h2>App Híbrido</h2>
-                        <p>Desenvolvemos APPs com Apache Cordova que oferece um grupo de APIs que permitem desenvolver uma aplicação com HTML, CSS e JavaScript encapsulada como aplicação móvel nativa. Aplicações híbridas para diferentes plataformas mobile com base no componente WebView.</p>
-                        <div class="button"><a href="#"><button><span class="index">Projeto App<i class="gg-arrow-right"></i></span></button></a></div>
+                        <p>Desenvolvemos APPs com Apache Cordova que oferece um grupo de APIs que permitem desenvolver uma aplicação com HTML, CSS e JavaScript encapsulada como aplicação móvel nativa. Aplicações híbridas para diferentes plataformas mobile
+                            com base no componente WebView.</p>
+                        <div class="button"><a href="#"><button><span class="index">Projeto App<i
+                                            class="gg-arrow-right"></i></span></button></a></div>
                     </div>
                 </div>
                 <div class="portfolio portfolio-second">
@@ -281,8 +309,10 @@
                     </div>
                     <div class="portfolio-text">
                         <h2>WEBSITE</h2>
-                        <p>Construir sites não precisa ser um problema para sua agência ou empresa. Desenvolvemos páginas virtuais para tornar sua empresa online e assim podendo ampliar todo o seu negócio.</p>
-                        <div class="button"><a href="#"><button><span class="index"> Projeto WEBSITE <i class="gg-arrow-right"></i></span></button></a></div>
+                        <p>Construir sites não precisa ser um problema para sua agência ou empresa. Desenvolvemos páginas virtuais para tornar sua empresa online e assim podendo ampliar todo o seu negócio.
+                        </p>
+                        <div class="button"><a href="#"><button><span class="index"> Projeto WEBSITE <i
+                                            class="gg-arrow-right"></i></span></button></a></div>
                     </div>
                 </div>
                 <!--
@@ -304,7 +334,8 @@
                     <div class="portfolio-text">
                         <h2>Loja On-Line</h2>
                         <p>E-commerce, uma modalidade de negócio em que as transações comerciais são realizadas totalmente online. Desde a escolha do produto pelo cliente, até a finalização do pedido, com todas as formas de pagamento.</p>
-                        <div class="button"><a href="#"><button><span class="index"> Projeto Loja On-Line<i class="gg-arrow-right"></i></span></button></a></div>
+                        <div class="button"><a href="#"><button><span class="index"> Projeto Loja On-Line<i
+                                            class="gg-arrow-right"></i></span></button></a></div>
                     </div>
                 </div>
             </div>
@@ -428,8 +459,12 @@
                         </div>
                         <input type="text" id="subject" name="subject" placeholder="Assunto:" class="input-subject" required>
                         <textarea id="body" name="body" class="input-textarea" placeholder="mensagem" required></textarea>
+                        <div class="g-recaptcha" data-sitekey="6Lffjp0hAAAAAIi2tPXpmwm5qBPknQXl83G4-MMh"></div>
                         <button type="submit" id="submit" name="submit" value="send">Enviar</button>
+
                     </form>
+
+
 
                 </div>
 
@@ -605,16 +640,18 @@
     </script>
 
     <!--Start of Tawk.to Script-->
-<script type="text/javascript">
-    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-    (function(){
-    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/62e4094054f06e12d88bf4a8/1g95c899c';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-    })();
+    <script type="text/javascript">
+        var Tawk_API = Tawk_API || {},
+            Tawk_LoadStart = new Date();
+        (function() {
+            var s1 = document.createElement("script"),
+                s0 = document.getElementsByTagName("script")[0];
+            s1.async = true;
+            s1.src = 'https://embed.tawk.to/62e4094054f06e12d88bf4a8/1g95c899c';
+            s1.charset = 'UTF-8';
+            s1.setAttribute('crossorigin', '*');
+            s0.parentNode.insertBefore(s1, s0);
+        })();
     </script>
     <!--End of Tawk.to Script-->
 
