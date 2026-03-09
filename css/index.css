@@ -354,14 +354,19 @@ body {
 .social-media {
     color: white;
     width: 21px;
-    ;
     opacity: .6;
     margin: 8px;
     transition: all .4s ease;
 }
 
 .social-media-st{
-  fill: white;
+    color: white;
+    width: 21px;
+    opacity: .6;
+    margin: 8px;
+    transition: all .4s ease;
+    fill: white;
+    filter: brightness(0) invert(1);
 }
 
 .social-media:hover {
