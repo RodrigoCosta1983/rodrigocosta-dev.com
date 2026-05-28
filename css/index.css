@@ -257,10 +257,8 @@ body {
 }
 
 .header-image img {
-    width: 100%;
-    height: 100vh; /* Ou a altura que você já estiver usando */
-    object-fit: cover; /* Faz a imagem preencher o espaço sem distorcer */
-    object-position: center; /* ISSO É O MAIS IMPORTANTE: Força o centro da imagem a ficar no centro da tela */
+    height: 100vh;
+    float: right;
 }
 
 .header-image {
@@ -1546,9 +1544,20 @@ For devices with smaller width like mobile phone
         display: none;
     }
     .header-image {
-        float: right;
-        height: auto;
-        width: 0%;
+        position: absolute; /* Tira a imagem do fluxo normal */
+        top: 0;
+        left: 0;
+        width: 100%; /* Agora a imagem ocupa 100% da tela do celular */
+        height: 100vh;
+        z-index: 0; /* Joga a imagem para trás do texto */
+    }
+
+    .header-image img {
+        width: 100%;
+        height: 100vh;
+        object-fit: cover;
+        object-position: center top; /* Força o centro/topo (seu rosto) a aparecer */
+        opacity: 0.8; /* Dá uma leve transparência para o texto ficar mais legível (opcional) */
     }
     .social-media-links {
         width: 100%;
