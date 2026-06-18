@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arena da Memória - Jogo de Cartas</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Press Start 2P (para clima esportivo/arcade) -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at center, #155e75 0%, #0f172a 100%);
+            touch-action: manipulation;
+        }
+        .font-sporty {
+            font-family: 'Fredoka', sans-serif;
+        }
+        /* Efeito de rotação 3D nas cartas */
+        .perspective {
+            perspective: 1000px;
+        }
+        .card-inner {
+            transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        .card-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .card-front {
+            transform: rotateY(180deg);
+        }
+        /* Gramado de futebol estilizado */
+        .soccer-field {
+            background-color: #15803d;
+            background-image: 
+                radial-gradient(circle at 50% 50%, transparent 40px, rgba(255,255,255,0.15) 41px, transparent 42px),
+                linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden text-white min-h-screen flex flex-col justify-between">
+
+    <!-- Elementos de som gerados via Web Audio API, mas declaramos controle no topo -->
+    <header class="w-full max-w-md mx-auto px-4 pt-3 flex justify-between items-center z-10">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🏆</span>
+            <h1 class="font-sporty text-xl font-bold tracking-wide bg-gradient-to-r from-emerald-400 to-cyan-300 bg-clip-text text-transparent">
+                ARENA MEMÓRIA
+            </h1>
+        </div>
+        <div class="flex gap-2">
+            <button id="btn-sound" onclick="toggleMute()" class="w-10 h-10 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-lg shadow-md transition active:scale-95">
+                <i class="fas fa-volume-up" id="sound-icon"></i>
+            </button>
+            <button id="btn-how-to" onclick="openModal('how-to-modal')" class="w-10 h-10 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-lg shadow-md transition active:scale-95">
+                <i class="fas fa-question"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-md mx-auto px-4 py-3 flex flex-col justify-center">
+        
+        <!-- TELA DE CONFIGURAÇÃO INICIAL (LOBBY) -->
+        <div id="lobby-screen" class="bg-slate-900/95 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-flex items-center justify-center bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl animate-bounce mb-2">
+                    <span class="text-4xl">⚽</span>
+                    <span class="text-3xl mx-1">🏟️</span>
+                    <span class="text-3xl mx-1">🥅</span>
+                    <span class="text-4xl">🏃‍♂️</span>
+                </div>
+                <h2 class="text-2xl font-sporty font-bold">Desafio do Intervalo!</h2>
+                <p class="text-sm text-slate-400">Junte seus amigos para uma disputa eletrizante de memória e agilidade mental.</p>
+            </div>
+
+            <!-- Escolha de Modo de Jogo -->
+            <div class="space-y-3">
+                <label class="block text-xs font-bold uppercase tracking-wider text-emerald-400">Modo de Jogo</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="setGameMode('solo')" id="mode-solo" class="py-3 px-4 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 flex flex-col items-center justify-center gap-1 transition active:scale-95">
+                        <span class="text-2xl">⏱️</span>
+                        <span class="font-bold text-sm">Treino Solo</span>
+                    </button>
+                    <button onclick="setGameMode('vs')" id="mode-vs" class="py-3 px-4 rounded-xl border-2 border-slate-800 bg-slate-800/50 flex flex-col items-center justify-center gap-1 transition active:scale-95">
+                        <span class="text-2xl">👥</span>
+                        <span class="font-bold text-sm">Passa e Joga</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Configurações do Modo VS (Oculto por padrão) -->
+            <div id="vs-settings" class="hidden space-y-3 p-3 bg-slate-950/50 rounded-2xl border border-slate-800">
+                <label class="block text-xs font-bold uppercase tracking-wider text-cyan-400">Quantidade de Jogadores</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setPlayerCount(2)" id="players-2" class="py-2 rounded-lg border border-cyan-500 bg-cyan-500/10 font-bold text-sm active:scale-95 transition">2 Amigos</button>
+                    <button onclick="setPlayerCount(3)" id="players-3" class="py-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 font-bold text-sm active:scale-95 transition">3 Amigos</button>
+                    <button onclick="setPlayerCount(4)" id="players-4" class="py-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 font-bold text-sm active:scale-95 transition">4 Amigos</button>
+                </div>
+                
+                <div id="player-names-container" class="space-y-2 mt-3">
+                    <!-- Gerado dinamicamente via JS -->
+                </div>
+            </div>
+
+            <!-- Tamanho do Tabuleiro -->
+            <div class="space-y-3">
+                <label class="block text-xs font-bold uppercase tracking-wider text-emerald-400">Tamanho da Arena</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setBoardSize(8)" id="size-8" class="py-2 rounded-lg border border-emerald-500 bg-emerald-500/10 font-bold text-xs active:scale-95 transition">
+                        Fácil (2x4) <br><span class="text-slate-400">8 Cartas</span>
+                    </button>
+                    <button onclick="setBoardSize(12)" id="size-12" class="py-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 font-bold text-xs active:scale-95 transition">
+                        Médio (3x4) <br><span class="text-slate-400">12 Cartas</span>
+                    </button>
+                    <button onclick="setBoardSize(16)" id="size-16" class="py-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 font-bold text-xs active:scale-95 transition">
+                        Clássico (4x4) <br><span class="text-slate-400">16 Cartas</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Botão de Iniciar -->
+            <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-sporty font-black text-lg rounded-xl shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition duration-150 transform uppercase tracking-wider">
+                Apitar Início! ⚽💨
+            </button>
+        </div>
+
+        <div id="game-screen" class="hidden space-y-4">
+            
+            <!-- Placar de Liderança / Turnos -->
+            <div id="scoreboard" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col justify-between items-center shadow-lg">
+                <!-- Painel de Informações do Turno Atual (Modo VS) -->
+                <div id="turn-indicator" class="hidden w-full flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest font-bold">Vez do Jogador:</span>
+                    <span id="current-player-name" class="font-sporty font-extrabold text-emerald-400 text-sm px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">Jogador 1</span>
+                </div>
+
+                <!-- Lista de Pontuações -->
+                <div id="players-scores-list" class="w-full flex justify-around flex-wrap gap-2">
+                    <!-- Gerado dinamicamente pelo JS -->
+                </div>
+
+                <!-- Info do Solo (Tempo / Movimentos) -->
+                <div id="solo-info" class="w-full flex justify-between items-center text-center px-2 py-1">
+                    <div>
+                        <span class="text-xs text-slate-400 block uppercase font-bold">Tempo</span>
+                        <span id="solo-timer" class="font-sporty font-bold text-cyan-400 text-lg">00:00</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block uppercase font-bold">Cliques</span>
+                        <span id="solo-moves" class="font-sporty font-bold text-emerald-400 text-lg">0</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block uppercase font-bold">Combo</span>
+                        <span id="solo-combo" class="font-sporty font-bold text-amber-400 text-lg">x1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arena de Cartas (Gramado) -->
+            <div class="relative">
+                <div id="card-arena" class="soccer-field rounded-3xl p-3 grid gap-2.5 min-h-[300px] shadow-2xl relative overflow-hidden">
+                    <!-- Linhas do Campo Decorativas -->
+                    <div class="absolute inset-0 border-4 border-white/10 pointer-events-none rounded-3xl m-2"></div>
+                    <div class="absolute left-0 right-0 top-1/2 h-[2px] bg-white/10 pointer-events-none -translate-y-1/2"></div>
+                    <div class="absolute left-1/2 top-1/2 w-20 h-20 border-2 border-white/10 pointer-events-none rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+                    
+                    <!-- As cartas serão renderizadas aqui dentro -->
+                </div>
+            </div>
+
+            <!-- Rodapé da Arena de Jogo (Controles Extras) -->
+            <div class="flex gap-2 justify-between items-center">
+                <button onclick="confirmReset()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-sm rounded-xl active:scale-95 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-arrow-left"></i> Sair do Jogo
+                </button>
+                
+                <!-- Poder Especial "VAR" (Revelação rápida de 1.5s) -->
+                <button id="var-powerup" onclick="useVarPowerUp()" class="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm rounded-xl active:scale-95 transition flex items-center justify-center gap-2 shadow-lg shadow-amber-500/15">
+                    <span class="font-sporty">🖥️ VAR</span>
+                    <span id="var-count" class="bg-slate-950 text-amber-400 text-xs px-2 py-0.5 rounded-full font-bold">1</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden bg-slate-900/95 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6 text-center relative overflow-hidden">
+            <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none w-full h-full z-0"></canvas>
+            
+            <div class="relative z-10 space-y-4">
+                <div class="inline-block p-4 bg-amber-500/10 border border-amber-500/30 rounded-full animate-bounce">
+                    <span class="text-5xl">🏆</span>
+                </div>
+                
+                <h2 class="text-3xl font-sporty font-black text-amber-400 tracking-wide uppercase">Fim de Jogo!</h2>
+                
+                <!-- Detalhes do Campeão -->
+                <div id="winner-announcement" class="space-y-2 p-4 bg-slate-950/60 rounded-2xl border border-slate-800">
+                    <p class="text-sm text-slate-400 uppercase tracking-widest font-bold">O grande vencedor é</p>
+                    <p id="winner-name" class="font-sporty font-extrabold text-2xl text-emerald-400">Jogador 1</p>
+                    <p id="winner-stats" class="text-sm text-slate-300">Com 4 Pares Encontrados!</p>
+                </div>
+
+                <!-- Placar Geral da Partida -->
+                <div class="space-y-2 text-left">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Placar Geral</h3>
+                    <div id="final-scoreboard" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                        <!-- Gerado via JS -->
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="restartGame()" class="py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-sporty font-bold rounded-xl active:scale-95 transition">
+                        Jogar Novamente 🔁
+                    </button>
+                    <button onclick="backToLobby()" class="py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold rounded-xl active:scale-95 transition">
+                        Voltar ao Lobby 🏠
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="w-full max-w-md mx-auto px-4 py-3 text-center text-xs text-slate-500 z-10">
+        Desenvolvido para diversão rápida no intervalo • ⚡ Alta Performance
+    </footer>
+
+    <!-- Modal Como Jogar -->
+    <div id="how-to-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-xs space-y-4">
+            <h3 class="text-xl font-sporty font-bold text-emerald-400">Como Jogar?</h3>
+            <ul class="space-y-3 text-sm text-slate-300">
+                <li class="flex items-start gap-2.5">
+                    <span class="text-emerald-400 mt-0.5">⏱️</span>
+                    <span><strong>Modo Solo:</strong> Encontre todos os pares no menor tempo possível! Combos rápidos geram pontuações extras.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="text-cyan-400 mt-0.5">👥</span>
+                    <span><strong>Passa e Joga:</strong> Jogue em turnos com até 4 amigos em apenas um celular. Quem encontrar o par ganha ponto e joga de novo!</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                    <span class="text-amber-400 mt-0.5">🖥️</span>
+                    <span><strong>O VAR:</strong> Use o botão "VAR" uma vez por jogo para dar uma espiada rápida nas cartas e virar o placar!</span>
+                </li>
+            </ul>
+            <button onclick="closeModal('how-to-modal')" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold rounded-xl transition">
+                Entendido! 👍
+            </button>
+        </div>
+    </div>
+
+    <!-- Caixa de Mensagem Customizada (Substituto para alert) -->
+    <div id="message-box" class="fixed inset-x-4 top-1/2 -translate-y-1/2 md:max-w-xs md:mx-auto bg-slate-950/95 border-2 border-slate-800 rounded-2xl p-5 hidden text-center shadow-2xl z-50">
+        <p id="message-text" class="text-base font-medium mb-4">Tem certeza?</p>
+        <div class="flex justify-center gap-3">
+            <button id="message-btn-yes" class="py-2 px-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition active:scale-95">Sim</button>
+            <button id="message-btn-no" class="py-2 px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold rounded-xl text-sm transition active:scale-95">Não</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GERENCIAMENTO DE ÁUDIO WEB API ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let isMuted = false;
+
+        function playSound(type) {
+            if (isMuted) return;
+            try {
+                const now = audioCtx.currentTime;
+                
+                if (type === 'flip') {
+                    // Som sutil de clique/flipper
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } 
+                else if (type === 'match') {
+                    // Acorde alegre de sucesso
+                    const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                        gain.gain.setValueAtTime(0.1, now + idx * 0.05);
+                        gain.gain.linearRampToValueAtTime(0, now + idx * 0.05 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.05);
+                        osc.stop(now + idx * 0.05 + 0.35);
+                    });
+                } 
+                else if (type === 'mismatch') {
+                    // Som descendente curto
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.15);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                }
+                else if (type === 'whistle') {
+                    // Som de apito de juiz clássico (trilo rápido com frequências altas)
+                    const playSingleWhistle = (startTime, duration) => {
+                        const osc1 = audioCtx.createOscillator();
+                        const osc2 = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        
+                        osc1.type = 'sine';
+                        osc1.frequency.setValueAtTime(2500, startTime);
+                        // Efeito de vibrato
+                        const lfo = audioCtx.createOscillator();
+                        const lfoGain = audioCtx.createGain();
+                        lfo.frequency.value = 50; // vibração rápida
+                        lfoGain.gain.value = 150;
+                        lfo.connect(lfoGain);
+                        lfoGain.connect(osc1.frequency);
+                        
+                        osc2.type = 'triangle';
+                        osc2.frequency.setValueAtTime(2510, startTime);
+                        
+                        gain.gain.setValueAtTime(0, startTime);
+                        gain.gain.linearRampToValueAtTime(0.12, startTime + 0.02);
+                        gain.gain.setValueAtTime(0.12, startTime + duration - 0.05);
+                        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+                        
+                        osc1.connect(gain);
+                        osc2.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        
+                        lfo.start(startTime);
+                        osc1.start(startTime);
+                        osc2.start(startTime);
+                        
+                        lfo.stop(startTime + duration);
+                        osc1.stop(startTime + duration);
+                        osc2.stop(startTime + duration);
+                    };
+                    
+                    // Dois apitados curtos e um longo (Clássico futebol)
+                    playSingleWhistle(now, 0.15);
+                    playSingleWhistle(now + 0.2, 0.15);
+                    playSingleWhistle(now + 0.4, 0.45);
+                }
+                else if (type === 'victory') {
+                    // Fanfarra triunfal
+                    const notes = [349.23, 440.00, 523.25, 587.33, 659.25, 698.46]; // F4, A4, C5, D5, E5, F5
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.15);
+                        gain.gain.setValueAtTime(0.08, now + idx * 0.15);
+                        gain.gain.linearRampToValueAtTime(0, now + idx * 0.15 + 0.4);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.15);
+                        osc.stop(now + idx * 0.15 + 0.45);
+                    });
+                }
+            } catch (e) {
+                console.warn("Áudio bloqueado pelo navegador até interação.", e);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('sound-icon');
+            if (isMuted) {
+                icon.className = 'fas fa-volume-mute text-rose-400';
+            } else {
+                icon.className = 'fas fa-volume-up';
+                // Ativa contexto se estiver em pausa
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                playSound('flip');
+            }
+        }
+
+        // --- ENVELOPE DE CONFIGURAÇÃO DE ESTADOS ---
+        let gameMode = 'solo'; // 'solo' ou 'vs'
+        let playerCount = 2;
+        let boardSize = 8; // 8, 12 ou 16
+        let players = [];
+        let currentPlayerIndex = 0;
+        let cards = [];
+        let flippedCards = [];
+        let isLocked = false;
+        let varPowerUpUsed = false;
+
+        // Variáveis de Jogo Solo
+        let soloMoves = 0;
+        let soloTime = 0;
+        let soloInterval = null;
+        let comboCount = 1;
+        let lastMatchTime = 0;
+
+        // Lista Completa de Emojis Temáticos (Iniciando com os requisitados)
+        const soccerEmojis = [
+            '⚽', '🏟️', '🥅', '🏃‍♂️', // Mandatários do Usuário
+            '🏆', '🟨', '🟥', '🧤', // Extras para tabuleiro médio/clássico
+            '👟', '📣', '🛡️', '🥤'
+        ];
+
+        function setGameMode(mode) {
+            gameMode = mode;
+            document.getElementById('mode-solo').className = mode === 'solo' 
+                ? 'py-3 px-4 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 flex flex-col items-center justify-center gap-1 transition active:scale-95'
+                : 'py-3 px-4 rounded-xl border-2 border-slate-800 bg-slate-800/50 flex flex-col items-center justify-center gap-1 transition active:scale-95 text-slate-400';
+            
+            document.getElementById('mode-vs').className = mode === 'vs'
+                ? 'py-3 px-4 rounded-xl border-2 border-cyan-500 bg-cyan-500/10 flex flex-col items-center justify-center gap-1 transition active:scale-95'
+                : 'py-3 px-4 rounded-xl border-2 border-slate-800 bg-slate-800/50 flex flex-col items-center justify-center gap-1 transition active:scale-95 text-slate-400';
+            
+            const vsSettings = document.getElementById('vs-settings');
+            if (mode === 'vs') {
+                vsSettings.classList.remove('hidden');
+                updatePlayerNamesInput();
+            } else {
+                vsSettings.classList.add('hidden');
+            }
+            playSound('flip');
+        }
+
+        function setPlayerCount(count) {
+            playerCount = count;
+            for (let i = 2; i <= 4; i++) {
+                const btn = document.getElementById(`players-${i}`);
+                if (i === count) {
+                    btn.className = 'py-2 rounded-lg border border-cyan-500 bg-cyan-500/10 font-bold text-sm active:scale-95 transition';
+                } else {
+                    btn.className = 'py-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 font-bold text-sm active:scale-95 transition';
+                }
+            }
+            updatePlayerNamesInput();
+            playSound('flip');
+        }
+
+        function updatePlayerNamesInput() {
+            const container = document.getElementById('player-names-container');
+            container.innerHTML = '';
+            
+            const colors = [
+                'border-emerald-500/30 text-emerald-400 bg-emerald-500/5',
+                'border-cyan-500/30 text-cyan-400 bg-cyan-500/5',
+                'border-amber-500/30 text-amber-400 bg-amber-500/5',
+                'border-rose-500/30 text-rose-400 bg-rose-500/5'
+            ];
+
+            for (let i = 0; i < playerCount; i++) {
+                const div = document.createElement('div');
+                div.className = `flex items-center gap-2 p-1.5 rounded-xl border ${colors[i]}`;
+                div.innerHTML = `
+                    <span class="text-xs font-bold px-2 w-8 text-center uppercase">P${i+1}</span>
+                    <input type="text" id="player-name-input-${i}" value="Craque ${i+1}" 
+                        class="bg-transparent border-0 outline-none text-sm font-bold w-full text-white placeholder-slate-600 focus:placeholder-transparent"
+                        maxlength="10" />
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function setBoardSize(size) {
+            boardSize = size;
+            const sizes = [8, 12, 16];
+            sizes.forEach(s => {
+                const btn = document.getElementById(`size-${s}`);
+                if (s === size) {
+                    btn.className = 'py-2 rounded-lg border border-emerald-500 bg-emerald-500/10 font-bold text-xs active:scale-95 transition';
+                } else {
+                    btn.className = 'py-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 font-bold text-xs active:scale-95 transition';
+                }
+            });
+            playSound('flip');
+        }
+
+        // --- STREAMING_CHUNK: Inicialização e Criação do Tabuleiro ---
+        function startGame() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // Carregar jogadores
+            players = [];
+            if (gameMode === 'vs') {
+                for (let i = 0; i < playerCount; i++) {
+                    const input = document.getElementById(`player-name-input-${i}`);
+                    const name = input ? input.value.trim() : `Craque ${i+1}`;
+                    players.push({
+                        id: i,
+                        name: name || `Craque ${i+1}`,
+                        score: 0
+                    });
+                }
+                currentPlayerIndex = 0;
+                document.getElementById('turn-indicator').classList.remove('hidden');
+                document.getElementById('solo-info').classList.add('hidden');
+                updateVsScoreboard();
+            } else {
+                document.getElementById('turn-indicator').classList.add('hidden');
+                document.getElementById('solo-info').classList.remove('hidden');
+                resetSoloStats();
+            }
+
+            // Preparar Deck de Cartas
+            prepareCards();
+
+            // Configurar Layout Grid
+            const arena = document.getElementById('card-arena');
+            arena.className = 'soccer-field rounded-3xl p-3 grid gap-2.5 min-h-[300px] shadow-2xl relative overflow-hidden';
+            if (boardSize === 8) {
+                arena.classList.add('grid-cols-4'); // 2 linhas, 4 colunas
+            } else if (boardSize === 12) {
+                arena.classList.add('grid-cols-4'); // 3 linhas, 4 colunas
+            } else {
+                arena.classList.add('grid-cols-4'); // 4 linhas, 4 colunas
+            }
+
+            // Resetar poderes do VAR
+            varPowerUpUsed = false;
+            const varBtn = document.getElementById('var-powerup');
+            varBtn.disabled = false;
+            varBtn.classList.remove('opacity-50', 'bg-slate-700', 'cursor-not-allowed');
+            varBtn.classList.add('bg-amber-500', 'hover:bg-amber-400', 'text-slate-950');
+            document.getElementById('var-count').innerText = "1";
+
+            // Trocar Telas
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            renderCards();
+            playSound('whistle');
+        }
+
+        function prepareCards() {
+            const numPairs = boardSize / 2;
+            
+            // Garantir que as 4 obrigatórias estão sempre inclusas primeiro
+            const coreList = soccerEmojis.slice(0, 4);
+            const remainingPool = soccerEmojis.slice(4);
+            
+            // Escolhe emojis adicionais para completar a quantidade de pares
+            const selectedEmojis = [...coreList];
+            if (numPairs > 4) {
+                // Embaralha o restante para diversificar e pega os necessários
+                const shuffledRemaining = remainingPool.sort(() => Math.random() - 0.5);
+                for (let i = 0; i < numPairs - 4; i++) {
+                    selectedEmojis.push(shuffledRemaining[i]);
+                }
+            } else if (numPairs < 4) {
+                // Se por algum motivo o tamanho do board for menor que 4 pares (não mapeado por padrão, mas seguro)
+                selectedEmojis.length = numPairs;
+            }
+
+            // Duplicar e embaralhar
+            const doubled = [...selectedEmojis, ...selectedEmojis];
+            const shuffled = doubled.sort(() => Math.random() - 0.5);
+
+            cards = shuffled.map((emoji, index) => ({
+                id: index,
+                emoji: emoji,
+                isFlipped: false,
+                isMatched: false
+            }));
+
+            flippedCards = [];
+            isLocked = false;
+        }
+
+        // --- STREAMING_CHUNK: Renderização do Jogo ---
+        function renderCards() {
+            const arena = document.getElementById('card-arena');
+            // Remove apenas as cartas pré-existentes, mantendo as linhas decorativas
+            const existingCards = arena.querySelectorAll('.card-item');
+            existingCards.forEach(c => c.remove());
+
+            cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card-item perspective cursor-pointer aspect-[3/4] select-none z-10';
+                cardEl.id = `card-${card.id}`;
+                cardEl.onclick = () => handleCardClick(card.id);
+
+                // Determina o tamanho da fonte do emoji baseado no tamanho do tabuleiro
+                const emojiSize = boardSize > 12 ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl';
+
+                cardEl.innerHTML = `
+                    <div class="card-inner w-full h-full relative duration-300 pointer-events-none">
+                        <!-- Costas da Carta -->
+                        <div class="card-back absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 border-2 border-emerald-400 flex flex-col items-center justify-center shadow-lg transform transition active:scale-95">
+                            <span class="text-xl sm:text-2xl opacity-80 animate-pulse">⭐</span>
+                        </div>
+                        <!-- Frente da Carta -->
+                        <div class="card-front absolute inset-0 rounded-2xl bg-slate-900 border-2 border-cyan-400 flex items-center justify-center shadow-inner">
+                            <span class="${emojiSize} drop-shadow-md">${card.emoji}</span>
+                        </div>
+                    </div>
+                `;
+
+                arena.appendChild(cardEl);
+            });
+        }
+
+        // --- STREAMING_CHUNK: Controle de Cliques e Regras do Jogo ---
+        function handleCardClick(cardId) {
+            if (isLocked) return;
+            const card = cards.find(c => c.id === cardId);
+
+            // Impedir clique em cartas já abertas ou pareadas
+            if (card.isFlipped || card.isMatched) return;
+
+            // Vibração tátil sutil para celulares (se suportado)
+            if (navigator.vibrate) {
+                navigator.vibrate(25);
+            }
+
+            // Registrar clique no modo solo
+            if (gameMode === 'solo') {
+                soloMoves++;
+                document.getElementById('solo-moves').innerText = soloMoves;
+                // Iniciar timer se for o primeiro clique
+                if (!soloInterval) {
+                    startSoloTimer();
+                }
+            }
+
+            // Flipar visualmente
+            flipCardVisual(cardId, true);
+            card.isFlipped = true;
+            flippedCards.push(card);
+
+            playSound('flip');
+
+            // Checar se abriu o par
+            if (flippedCards.length === 2) {
+                isLocked = true;
+                checkMatch();
+            }
+        }
+
+        function flipCardVisual(cardId, showFront) {
+            const cardEl = document.getElementById(`card-${cardId}`);
+            if (!cardEl) return;
+            const inner = cardEl.querySelector('.card-inner');
+            if (showFront) {
+                inner.classList.add('card-flipped');
+            } else {
+                inner.classList.remove('card-flipped');
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+
+            if (card1.emoji === card2.emoji) {
+                // DEU MATCH!
+                card1.isMatched = true;
+                card2.isMatched = true;
+                
+                playSound('match');
+                
+                // Animação de Match
+                highlightMatch(card1.id, card2.id);
+
+                if (gameMode === 'vs') {
+                    // Adiciona ponto para o jogador da vez
+                    players[currentPlayerIndex].score++;
+                    updateVsScoreboard();
+                    
+                    // Mostra aviso visual de ponto ganho
+                    showFloatingPoint(card2.id, `+1 Pt! Vez Extra!`, '#34d399');
+                    
+                    // Mantém a vez do jogador atual
+                } else {
+                    // Modo Solo: Sistema de Combo
+                    const now = Date.now();
+                    if (now - lastMatchTime < 3500) { // dentro de 3.5 segundos
+                        comboCount++;
+                    } else {
+                        comboCount = 1;
+                    }
+                    lastMatchTime = now;
+                    document.getElementById('solo-combo').innerText = `x${comboCount}`;
+                    
+                    // Floating point visual
+                    const comboColor = comboCount > 1 ? '#fbbf24' : '#10b981';
+                    showFloatingPoint(card2.id, `Par! x${comboCount}`, comboColor);
+                }
+
+                flippedCards = [];
+                isLocked = false;
+
+                // Verificar fim do jogo
+                if (cards.every(c => c.isMatched)) {
+                    setTimeout(endGame, 800);
+                }
+            } else {
+                // NÃO DEU MATCH
+                playSound('mismatch');
+                
+                if (gameMode === 'solo') {
+                    comboCount = 1;
+                    document.getElementById('solo-combo').innerText = `x1`;
+                }
+
+                // Shake anim para errados
+                shakeCards(card1.id, card2.id);
+
+                setTimeout(() => {
+                    flipCardVisual(card1.id, false);
+                    flipCardVisual(card2.id, false);
+                    
+                    card1.isFlipped = false;
+                    card2.isFlipped = false;
+                    
+                    flippedCards = [];
+                    isLocked = false;
+
+                    // Passa a vez no modo VS
+                    if (gameMode === 'vs') {
+                        currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+                        updateActivePlayerUI();
+                    }
+                }, 1000);
+            }
+        }
+
+        // --- STREAMING_CHUNK: Efeitos Visuais Adicionais ---
+        function highlightMatch(id1, id2) {
+            const el1 = document.getElementById(`card-${id1}`);
+            const el2 = document.getElementById(`card-${id2}`);
+            if (el1 && el2) {
+                // Brilho verde neon de gol!
+                el1.querySelector('.card-front').classList.add('border-emerald-400', 'shadow-[0_0_15px_rgba(16,185,129,0.7)]');
+                el2.querySelector('.card-front').classList.add('border-emerald-400', 'shadow-[0_0_15px_rgba(16,185,129,0.7)]');
+                
+                // Flutua e volta
+                el1.classList.add('scale-105', 'z-20');
+                el2.classList.add('scale-105', 'z-20');
+                
+                setTimeout(() => {
+                    el1.classList.remove('scale-105');
+                    el2.classList.remove('scale-105');
+                }, 300);
+            }
+        }
+
+        function shakeCards(id1, id2) {
+            const el1 = document.getElementById(`card-${id1}`);
+            const el2 = document.getElementById(`card-${id2}`);
+            if (el1 && el2) {
+                el1.querySelector('.card-inner').classList.add('animate-ping');
+                // Adicionamos classe temporária de balanço (shake)
+                el1.classList.add('translate-x-1');
+                el2.classList.add('-translate-x-1');
+                setTimeout(() => {
+                    el1.classList.remove('translate-x-1');
+                    el2.classList.remove('-translate-x-1');
+                }, 150);
+            }
+        }
+
+        function showFloatingPoint(cardId, text, color) {
+            const cardEl = document.getElementById(`card-${cardId}`);
+            if (!cardEl) return;
+            const floatEl = document.createElement('div');
+            floatEl.className = 'absolute font-sporty font-black text-xs px-2 py-1 rounded bg-slate-950/90 z-30 transition-all duration-1000 transform -translate-y-4 opacity-0 pointer-events-none';
+            floatEl.style.color = color;
+            floatEl.style.left = '50%';
+            floatEl.style.top = '10%';
+            floatEl.style.transform = 'translate(-50%, -50%)';
+            floatEl.innerText = text;
+            
+            cardEl.appendChild(floatEl);
+            
+            // Animação instantânea de subida e desaparição
+            setTimeout(() => {
+                floatEl.style.transform = 'translate(-50%, -80px) scale(1.15)';
+                floatEl.style.opacity = '1';
+            }, 20);
+
+            setTimeout(() => {
+                floatEl.style.opacity = '0';
+                setTimeout(() => floatEl.remove(), 1000);
+            }, 800);
+        }
+
+        // --- STREAMING_CHUNK: Painéis e Pontuações do Modo VS ---
+        function updateVsScoreboard() {
+            const listContainer = document.getElementById('players-scores-list');
+            listContainer.innerHTML = '';
+
+            const borderColors = [
+                'border-emerald-500/40 focus-within:border-emerald-400',
+                'border-cyan-500/40 focus-within:border-cyan-400',
+                'border-amber-500/40 focus-within:border-amber-400',
+                'border-rose-500/40 focus-within:border-rose-400'
+            ];
+
+            const textColors = ['text-emerald-400', 'text-cyan-400', 'text-amber-400', 'text-rose-400'];
+
+            players.forEach((p, idx) => {
+                const isCurrent = idx === currentPlayerIndex;
+                const activeStyle = isCurrent 
+                    ? `bg-slate-950 border-2 ${borderColors[idx]} scale-105 shadow-md shadow-emerald-500/5` 
+                    : 'bg-slate-900/50 border border-slate-800 opacity-60';
+
+                const div = document.createElement('div');
+                div.className = `flex-1 min-w-[80px] text-center p-2 rounded-xl transition duration-200 ${activeStyle}`;
+                div.innerHTML = `
+                    <div class="text-[10px] uppercase font-bold text-slate-400 truncate max-w-[80px] mx-auto">${p.name}</div>
+                    <div class="text-lg font-sporty font-black ${textColors[idx]}">${p.score} <span class="text-xs font-normal text-slate-500">pts</span></div>
+                `;
+                listContainer.appendChild(div);
+            });
+
+            updateActivePlayerUI();
+        }
+
+        function updateActivePlayerUI() {
+            if (gameMode !== 'vs' || players.length === 0) return;
+            const current = players[currentPlayerIndex];
+            const nameEl = document.getElementById('current-player-name');
+            nameEl.innerText = current.name;
+            
+            const colorClasses = [
+                'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+                'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
+                'text-amber-400 bg-amber-500/10 border-amber-500/20',
+                'text-rose-400 bg-rose-500/10 border-rose-500/20'
+            ];
+            
+            nameEl.className = `font-sporty font-extrabold text-sm px-3 py-1 rounded-full border ${colorClasses[currentPlayerIndex]}`;
+
+            // Reflete destaque visual nos avatares/cartões do placar
+            const scoreBoxes = document.getElementById('players-scores-list').children;
+            const borderColors = [
+                'border-emerald-500 bg-emerald-500/10 scale-105 opacity-100 shadow-[0_0_10px_rgba(16,185,129,0.15)]',
+                'border-cyan-500 bg-cyan-500/10 scale-105 opacity-100 shadow-[0_0_10px_rgba(6,182,212,0.15)]',
+                'border-amber-500 bg-amber-500/10 scale-105 opacity-100 shadow-[0_0_10px_rgba(245,158,11,0.15)]',
+                'border-rose-500 bg-rose-500/10 scale-105 opacity-100 shadow-[0_0_10px_rgba(244,63,94,0.15)]'
+            ];
+
+            for (let i = 0; i < scoreBoxes.length; i++) {
+                if (i === currentPlayerIndex) {
+                    scoreBoxes[i].className = `flex-1 min-w-[80px] text-center p-2 rounded-xl transition duration-200 border-2 ${borderColors[i]}`;
+                } else {
+                    scoreBoxes[i].className = 'flex-1 min-w-[80px] text-center p-2 rounded-xl transition duration-200 bg-slate-900/40 border border-slate-800 opacity-50';
+                }
+            }
+        }
+
+        // --- STREAMING_CHUNK: Modo Solo Timer & Stats ---
+        function resetSoloStats() {
+            soloMoves = 0;
+            soloTime = 0;
+            comboCount = 1;
+            lastMatchTime = 0;
+            if (soloInterval) clearInterval(soloInterval);
+            soloInterval = null;
+
+            document.getElementById('solo-moves').innerText = '0';
+            document.getElementById('solo-timer').innerText = '00:00';
+            document.getElementById('solo-combo').innerText = 'x1';
+        }
+
+        function startSoloTimer() {
+            soloTime = 0;
+            soloInterval = setInterval(() => {
+                soloTime++;
+                const mins = String(Math.floor(soloTime / 60)).padStart(2, '0');
+                const secs = String(soloTime % 60).padStart(2, '0');
+                document.getElementById('solo-timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        // --- STREAMING_CHUNK: Sistema de VAR (Poder Especial) ---
+        function useVarPowerUp() {
+            if (isLocked || varPowerUpUsed) return;
+            
+            varPowerUpUsed = true;
+            isLocked = true;
+
+            // Desabilitar botão visualmente
+            const varBtn = document.getElementById('var-powerup');
+            varBtn.disabled = true;
+            varBtn.className = 'flex-1 py-3 bg-slate-800 border border-slate-700 text-slate-500 font-bold text-sm rounded-xl cursor-not-allowed transition flex items-center justify-center gap-2';
+            document.getElementById('var-count').innerText = "0";
+
+            // Revela todas as cartas temporariamente
+            cards.forEach(card => {
+                if (!card.isMatched && !card.isFlipped) {
+                    flipCardVisual(card.id, true);
+                }
+            });
+
+            playSound('whistle');
+
+            // Tempo de análise do VAR: 1.5 segundos
+            setTimeout(() => {
+                cards.forEach(card => {
+                    // Se não foi flipado pelo jogador manualmente como uma das cartas abertas no momento
+                    const isCurrentlyFlippedByUser = flippedCards.some(f => f.id === card.id);
+                    if (!card.isMatched && !isCurrentlyFlippedByUser) {
+                        flipCardVisual(card.id, false);
+                    }
+                });
+                isLocked = false;
+            }, 1500);
+        }
+
+        // --- STREAMING_CHUNK: Fim de Jogo e Confetes ---
+        function endGame() {
+            if (soloInterval) clearInterval(soloInterval);
+            playSound('victory');
+
+            // Mudar para tela de resultados
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('results-screen').classList.remove('hidden');
+
+            const winnerNameEl = document.getElementById('winner-name');
+            const winnerStatsEl = document.getElementById('winner-stats');
+            const scoreboardContainer = document.getElementById('final-scoreboard');
+            scoreboardContainer.innerHTML = '';
+
+            if (gameMode === 'vs') {
+                // Descobrir maior pontuação
+                const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+                const winner = sortedPlayers[0];
+                
+                // Checar se houve empate
+                const isDraw = sortedPlayers.length > 1 && sortedPlayers[0].score === sortedPlayers[1].score;
+
+                if (isDraw) {
+                    winnerNameEl.innerText = "Empate Técnico!";
+                    winnerStatsEl.innerText = `Todos jogaram com categoria!`;
+                } else {
+                    winnerNameEl.innerText = `${winner.name} 🏆`;
+                    winnerStatsEl.innerText = `Campeão com ${winner.score} pontos!`;
+                }
+
+                // Renderizar placar completo de finalistas
+                sortedPlayers.forEach((p, idx) => {
+                    const row = document.createElement('div');
+                    row.className = `flex justify-between items-center p-2 rounded-xl text-sm ${idx === 0 && !isDraw ? 'bg-emerald-500/10 border border-emerald-500/30 font-bold' : 'bg-slate-900/50'}`;
+                    row.innerHTML = `
+                        <span class="text-slate-300">${idx + 1}º - ${p.name}</span>
+                        <span class="font-sporty text-emerald-400">${p.score} Pontos</span>
+                    `;
+                    scoreboardContainer.appendChild(row);
+                });
+            } else {
+                // Placar Solo
+                winnerNameEl.innerText = "Parabéns! 🎉";
+                const mins = String(Math.floor(soloTime / 60)).padStart(2, '0');
+                const secs = String(soloTime % 60).padStart(2, '0');
+                winnerStatsEl.innerText = `Você completou o campo de treino!`;
+
+                // Calcular pontuação final mockada baseada em cliques e tempo (menor é melhor)
+                const performanceScore = Math.max(100, 10000 - (soloMoves * 120) - (soloTime * 40));
+
+                scoreboardContainer.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center p-2 rounded-xl bg-slate-900/50 text-sm">
+                            <span class="text-slate-400">Tempo Total</span>
+                            <span class="font-sporty font-bold text-cyan-400">${mins}:${secs}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded-xl bg-slate-900/50 text-sm">
+                            <span class="text-slate-400">Movimentos (Cliques)</span>
+                            <span class="font-sporty font-bold text-emerald-400">${soloMoves}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm">
+                            <span class="text-slate-200 font-bold">Pontuação da Arena</span>
+                            <span class="font-sporty font-bold text-yellow-400">${performanceScore} pts</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Inicia confetes
+            initConfetti();
+        }
+
+        // --- STREAMING_CHUNK: Mecanismo de Confete Canvas ---
+        let confettiInterval = null;
+        function initConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            const colors = ['#f43f5e', '#10b981', '#06b6d4', '#eab308', '#ec4899', '#8b5cf6'];
+            const confettis = Array.from({ length: 60 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                r: Math.random() * 5 + 3,
+                d: Math.random() * canvas.height,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                tilt: Math.random() * 10 - 5,
+                tiltAngleIncremental: Math.random() * 0.07 + 0.02,
+                tiltAngle: 0
+            }));
+
+            function drawConfetti() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                confettis.forEach((c) => {
+                    c.tiltAngle += c.tiltAngleIncremental;
+                    c.y += (Math.cos(c.d) + 3 + c.r / 2) / 2;
+                    c.tilt = Math.sin(c.tiltAngle - c.r / 2) * 15;
+
+                    if (c.y > canvas.height) {
+                        c.x = Math.random() * canvas.width;
+                        c.y = -20;
+                        c.tilt = Math.random() * 10 - 5;
+                    }
+
+                    ctx.beginPath();
+                    ctx.lineWidth = c.r;
+                    ctx.strokeStyle = c.color;
+                    ctx.moveTo(c.x + c.tilt + c.r / 2, c.y);
+                    ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r / 2);
+                    ctx.stroke();
+                });
+            }
+
+            if (confettiInterval) clearInterval(confettiInterval);
+            confettiInterval = setInterval(drawConfetti, 20);
+
+            // Ajusta canvas ao redimensionar tela
+            window.onresize = () => {
+                if (document.getElementById('results-screen').classList.contains('hidden')) return;
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            };
+        }
+
+        function stopConfetti() {
+            if (confettiInterval) {
+                clearInterval(confettiInterval);
+                confettiInterval = null;
+            }
+            const canvas = document.getElementById('confetti-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // --- STREAMING_CHUNK: Menu, Diálogos de Confirmação e Restart ---
+        function restartGame() {
+            stopConfetti();
+            document.getElementById('results-screen').classList.add('hidden');
+            startGame();
+        }
+
+        function backToLobby() {
+            stopConfetti();
+            document.getElementById('results-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            playSound('flip');
+        }
+
+        function confirmReset() {
+            // Caixa de mensagem customizada sem travar o navegador (substituto do alert/confirm)
+            const box = document.getElementById('message-box');
+            const txt = document.getElementById('message-text');
+            const yes = document.getElementById('message-btn-yes');
+            const no = document.getElementById('message-btn-no');
+
+            txt.innerText = "Deseja mesmo sair do jogo atual e voltar ao início?";
+            box.classList.remove('hidden');
+
+            yes.onclick = () => {
+                box.classList.add('hidden');
+                if (soloInterval) clearInterval(soloInterval);
+                document.getElementById('game-screen').classList.add('hidden');
+                document.getElementById('lobby-screen').classList.remove('hidden');
+                playSound('flip');
+            };
+
+            no.onclick = () => {
+                box.classList.add('hidden');
+            };
+        }
+
+        // --- STREAMING_CHUNK: Utilitários de Modal Gerais ---
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.getElementById(modalId).classList.add('flex');
+            playSound('flip');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById(modalId).classList.remove('flex');
+            playSound('flip');
+        }
+
+        // Auto-inicializar preenchimento de jogadores no lobby no primeiro carregamento
+        window.onload = function() {
+            setGameMode('solo');
+            setBoardSize(8);
+        };
+    </script>
+</body>
+</html>
