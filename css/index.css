@@ -2464,7 +2464,7 @@ for tabs and large phones
 
 @media all and (max-width: 9000px) and (min-width: 1441px) {
     .portfolio-image img {
-        height: 500px;
+        height: 300px;
         width: 100%;
         position: relative;
     }
