@@ -989,14 +989,15 @@ button:hover .index {
 }
 
 .portfolio-image img {
-    height: 400px;
+    height: 100%;
     width: 100%;
+    object-fit: contain; /* Mantém a proporção da imagem */
     position: relative;
 }
 
 .portfolio-image {
-    height: 400px;
-    width: 40%;
+    height: 300px;
+    width: 30%;
 }
 
 .portfolio-image img::before {
@@ -1763,12 +1764,14 @@ For devices with smaller width like mobile phone
         box-shadow: 0px 0px 0px 0px #c70039;
     }
     .portfolio-image img {
-        height: 300px;
+        height: 100%;
         width: 100%;
+        object-fit: contain;
     }
     .portfolio-image {
-        height: 300px;
-        width: 90%;
+        height: 220px;  /* Valor original era 300px */
+        width: 80%;     /* Valor original era 90% */
+        margin: 0 auto; /* Centraliza a imagem no mobile */
     }
     #navigation-bar img {
         height: 80px;
@@ -2242,13 +2245,15 @@ for tabs and large phones
         box-shadow: 0px 0px 0px 0px #c70039;
     }
     .portfolio-image img {
-        height: 380px;
+        height: 100%;
         width: 100%;
+        object-fit: contain;
         position: relative;
     }
     .portfolio-image {
-        height: 380px;
-        width: 70%;
+        height: 280px;  /* Valor original era 380px */
+        width: 50%;     /* Valor original era 70% */
+        margin: 0 auto; /* Centraliza no tablet */
     }
     #navigation-bar img {
         height: 140px;
@@ -2464,13 +2469,14 @@ for tabs and large phones
 
 @media all and (max-width: 9000px) and (min-width: 1441px) {
     .portfolio-image img {
-        height: 400px;
-        width: 75%;
+        height: 100%;
+        width: 100%;   /* Removido o 75% original para alinhar com o contain */
+        object-fit: contain;
         position: relative;
     }
     .portfolio-image {
-        height: 500px;
-        width: 40%;
+        height: 350px; /* Valor original era 500px */
+        width: 30%;    /* Valor original era 40% */
     }
     .about-img img {
         width: 100%;
